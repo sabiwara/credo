@@ -37,9 +37,52 @@ defmodule Credo.Code do
   end
 
   def prewalk(source_ast, fun, accumulator) do
-    {_, accumulated} = Macro.prewalk(source_ast, accumulator, fun)
+    reduce(source_ast, accumulator, fun)
+  end
 
-    accumulated
+  def reduce(ast, acc, pre) when is_function(pre, 2) do
+    {ast, acc} = pre.(ast, acc)
+    do_reduce(ast, acc, pre)
+  end
+
+  defp do_reduce({form, _meta, args}, acc, pre) when is_atom(form) do
+    do_reduce_args(args, acc, pre)
+  end
+
+  defp do_reduce({form, meta, args}, acc, pre) do
+    {form, acc} = pre.(form, acc)
+    acc = do_reduce(form, acc, pre)
+    do_reduce_args(args, acc, pre)
+  end
+
+  defp do_reduce({left, right}, acc, pre) do
+    {left, acc} = pre.(left, acc)
+    acc = do_reduce(left, acc, pre)
+    {right, acc} = pre.(right, acc)
+    do_reduce(right, acc, pre)
+  end
+
+  defp do_reduce(list, acc, pre) when is_list(list) do
+    do_reduce_args(list, acc, pre)
+  end
+
+  defp do_reduce(_x, acc, _pre) do
+    acc
+  end
+
+  defp do_reduce_args(args, acc, _pre) when is_atom(args) do
+    acc
+  end
+
+  defp do_reduce_args(args, acc, pre) when is_list(args) do
+    :lists.foldl(
+      fn x, acc ->
+        {x, acc} = pre.(x, acc)
+        do_reduce(x, acc, pre)
+      end,
+      acc,
+      args
+    )
   end
 
   @doc """
