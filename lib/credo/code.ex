@@ -49,7 +49,7 @@ defmodule Credo.Code do
     do_reduce_args(args, acc, pre)
   end
 
-  defp do_reduce({form, meta, args}, acc, pre) do
+  defp do_reduce({form, _meta, args}, acc, pre) do
     {form, acc} = pre.(form, acc)
     acc = do_reduce(form, acc, pre)
     do_reduce_args(args, acc, pre)
